@@ -112,6 +112,41 @@
           <div class="flex items-center gap-3 mb-4">
             <h4 class="m-0 text-base font-semibold text-text">{{ $t('hmeManager.list.title') }}</h4>
             <span class="text-sm text-text-muted">({{ filteredList.length }})</span>
+            <FloatingDropdown
+              placement="bottom-end"
+              :close-on-select="true"
+              :disabled="listLoading"
+              class="ml-auto"
+            >
+              <template #trigger>
+                <button :disabled="listLoading" class="btn btn--secondary btn--sm">
+                  {{ $t('hmeManager.export.menu') }}
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M7 10l5 5 5-5H7z"/>
+                  </svg>
+                </button>
+              </template>
+              <template #default>
+                <button @click="exportEmails('txt', 'current')" class="dropdown-item">
+                  <span>{{ $t('hmeManager.export.txtAll') }}</span>
+                </button>
+                <button @click="exportEmails('json', 'current')" class="dropdown-item">
+                  <span>{{ $t('hmeManager.export.jsonAll') }}</span>
+                </button>
+                <button @click="exportEmails('txt', 'all')" class="dropdown-item">
+                  <span>{{ $t('hmeManager.export.txtEverything') }}</span>
+                </button>
+                <button @click="exportEmails('json', 'all')" class="dropdown-item">
+                  <span>{{ $t('hmeManager.export.jsonEverything') }}</span>
+                </button>
+                <button @click="exportEmails('txt', 'selected')" :disabled="selectedIds.size === 0" class="dropdown-item disabled:opacity-50">
+                  <span>{{ $t('hmeManager.export.txtSelected') }}</span>
+                </button>
+                <button @click="exportEmails('json', 'selected')" :disabled="selectedIds.size === 0" class="dropdown-item disabled:opacity-50">
+                  <span>{{ $t('hmeManager.export.jsonSelected') }}</span>
+                </button>
+              </template>
+            </FloatingDropdown>
           </div>
 
           <!-- Tabs -->
@@ -270,6 +305,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { useHmeAutoGenStore } from '../../stores/hmeAutoGen'
 import TagEditorModal from '../token/TagEditorModal.vue'
 import Pagination from '../common/Pagination.vue'
+import FloatingDropdown from '../common/FloatingDropdown.vue'
 
 
 defineEmits(['close'])
@@ -329,6 +365,10 @@ const selectedItemsAsTokens = computed(() =>
       tag_color: i.tag_color || '',
       _item: i
     }))
+)
+
+const selectedEmailList = computed(() =>
+  emailList.value.filter(i => selectedIds.value.has(i.anonymous_id))
 )
 
 const filteredList = computed(() => {
@@ -425,6 +465,72 @@ const getErrorMessage = (error) => {
   if (typeof error === 'string') return error
   if (error?.message) return error.message
   return String(error)
+}
+
+const loadAllExportItems = async () => {
+  const [activeItems, inactiveItems] = await Promise.all([
+    invoke('hme_list_local', { active: true, search: null }),
+    invoke('hme_list_local', { active: false, search: null })
+  ])
+  return [...activeItems, ...inactiveItems]
+}
+
+const getExportItems = async (scope) => {
+  if (scope === 'all') return loadAllExportItems()
+  if (scope === 'selected') return selectedEmailList.value
+  return filteredList.value
+}
+
+const getExportFileName = (format, scope, count) => {
+  const date = new Date().toISOString().slice(0, 10).replaceAll('-', '')
+  const scopeName = scope === 'selected'
+    ? 'selected'
+    : scope === 'all'
+      ? 'all'
+    : (listTab.value ? 'active' : 'inactive')
+  return `icloud_hme_${scopeName}_${count}_${date}.${format}`
+}
+
+const toExportJsonItem = (item) => ({
+  hme: item.hme || '',
+  label: item.label || '',
+  anonymous_id: item.anonymous_id || '',
+  account_id: item.account_id || '',
+  tag: item.tag || null,
+  tag_color: item.tag_color || null,
+  is_active: Boolean(item.is_active),
+  create_timestamp: item.create_timestamp || 0,
+  created_at: item.created_at || ''
+})
+
+const exportEmails = async (format, scope = 'current') => {
+  const items = await getExportItems(scope)
+  if (!items.length) {
+    notify(t('hmeManager.messages.exportEmpty'), 'warning')
+    return
+  }
+
+  try {
+    const { save } = await import('@tauri-apps/plugin-dialog')
+    const { writeTextFile } = await import('@tauri-apps/plugin-fs')
+    const normalizedFormat = format === 'json' ? 'json' : 'txt'
+    const content = normalizedFormat === 'json'
+      ? JSON.stringify(items.map(toExportJsonItem), null, 2)
+      : `${items.map(i => i.hme).filter(Boolean).join('\n')}\n`
+
+    const filePath = await save({
+      defaultPath: getExportFileName(normalizedFormat, scope, items.length),
+      filters: [{ name: normalizedFormat.toUpperCase(), extensions: [normalizedFormat] }]
+    })
+    if (!filePath) return
+
+    await writeTextFile(filePath, content)
+    notify(t('hmeManager.messages.exportSuccess', { n: items.length }), 'success')
+  } catch (e) {
+    const message = getErrorMessage(e)
+    if (message.toLowerCase().includes('cancel')) return
+    notify(`${t('hmeManager.messages.exportFailed')}: ${message}`, 'error')
+  }
 }
 
 const isCookieInvalidError = (error) => {

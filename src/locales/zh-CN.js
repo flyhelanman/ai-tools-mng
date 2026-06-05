@@ -1142,7 +1142,17 @@ export default {
       selected: '已选择 {n} 项',
       deactivate: '停用所选',
       delete: '删除所选',
-      cleanup: '一键清理'
+      cleanup: '一键清理',
+      exportSelected: '导出所选'
+    },
+    export: {
+      menu: '导出',
+      txtAll: '导出为 TXT (当前列表)',
+      jsonAll: '导出为 JSON (当前列表)',
+      txtEverything: '导出所有为 TXT',
+      jsonEverything: '导出所有为 JSON',
+      txtSelected: '导出选中为 TXT',
+      jsonSelected: '导出选中为 JSON'
     },
     confirm: {
       deactivateTitle: '停用确认',
@@ -1176,7 +1186,10 @@ export default {
       batchPartialFail: '{n} 个操作失败',
       autoStarted: '定时生成已开启，每 1 小时自动生成',
       autoStopped: '定时生成已停止',
-      autoSkipped: '冷却中，跳过本轮自动生成'
+      autoSkipped: '冷却中，跳过本轮自动生成',
+      exportEmpty: '没有可导出的邮箱',
+      exportSuccess: '已导出 {n} 个邮箱',
+      exportFailed: '导出失败'
     }
   },
   apiServer: {
@@ -2101,3 +2114,4 @@ export default {
     syncResult: '共获取 {total} 条，新增 {created}，更新 {updated}，跳过 {skipped}'
   }
 }
+

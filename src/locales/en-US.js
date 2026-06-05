@@ -1139,7 +1139,17 @@ export default {
       selected: '{n} selected',
       deactivate: 'Deactivate Selected',
       delete: 'Delete Selected',
-      cleanup: 'Deactivate & Delete'
+      cleanup: 'Deactivate & Delete',
+      exportSelected: 'Export Selected'
+    },
+    export: {
+      menu: 'Export',
+      txtAll: 'Export TXT (Current List)',
+      jsonAll: 'Export JSON (Current List)',
+      txtEverything: 'Export All TXT',
+      jsonEverything: 'Export All JSON',
+      txtSelected: 'Export Selected TXT',
+      jsonSelected: 'Export Selected JSON'
     },
     confirm: {
       deactivateTitle: 'Confirm Deactivation',
@@ -1173,7 +1183,10 @@ export default {
       batchPartialFail: '{n} operation(s) failed',
       autoStarted: 'Auto generate started, runs every hour',
       autoStopped: 'Auto generate stopped',
-      autoSkipped: 'Cooldown active, skipping this round'
+      autoSkipped: 'Cooldown active, skipping this round',
+      exportEmpty: 'No emails to export',
+      exportSuccess: 'Exported {n} email(s)',
+      exportFailed: 'Export failed'
     }
   },
   apiServer: {
@@ -2099,3 +2112,4 @@ export default {
     syncResult: 'Fetched {total}, created {created}, updated {updated}, skipped {skipped}'
   }
 }
+
